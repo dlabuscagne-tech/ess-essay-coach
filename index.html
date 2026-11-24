@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESS Essay Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday learning: calm, clear, encouraging; the working tool first
+   IDEA an exam answer booklet with the examiner's markband sheet beside it
+   PICTURE the 20-mark question strip (a 4 · b 7 · c 9) drawn to scale, each part live and clickable
+   COLOUR white paper, ink, leaf green field (ESS = living systems), examiner red for marks, sky blue for HL
+   TYPE Archivo 800 display + Source Sans 3 text
+   LAYOUT green header band with title, level and question, strip beneath; tabs; stepper in one calm column; stacks on phones */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0d1712);--ink:light-dark(#15211b,#e6efe9);--mute:light-dark(#55645c,#9db1a5);--line:light-dark(#d9e3dd,#29392f);--panel:light-dark(#f4f8f5,#13211a);--green:light-dark(#16613f,#2f9a68);--green2:light-dark(#0f4a30,#0a2e1d);--leaf:light-dark(#dff0e6,#173826);--red:light-dark(#c42a4e,#ff7a96);--redbg:light-dark(#fde8ed,#3a1620);--blue:light-dark(#1f5fa8,#7db4f2);--bluebg:light-dark(#e6f0fb,#14273d);--amber:light-dark(#8a5a00,#f1c063);--amberbg:light-dark(#fff3d6,#33280f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Source Sans 3",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;letter-spacing:-.02em;line-height:1.1;margin:0}
+h1{font-size:clamp(32px,5vw,48px);font-weight:800}
+h2{font-size:clamp(24px,3vw,30px);font-weight:800;margin-bottom:12px}
+h3{font-size:19px;font-weight:600;margin-bottom:6px}
+p{margin:0 0 10px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(4vw,16px)}
+header{background:var(--green2);color:#f1f8f3;padding:24px 0 22px}
+.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
+.top p{color:#bcd7c6;margin:6px 0 0;font-size:16px}
+.ctrls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.ctrls label{display:block;font-size:14px;color:#bcd7c6;margin-bottom:4px}
+.seg{display:inline-flex;border:1px solid #5f8f74;border-radius:10px;overflow:hidden}
+.seg button{background:transparent;color:#e6f2ea;border:0;padding:0 18px;min-height:44px;font:600 16px "Source Sans 3",sans-serif;cursor:pointer}
+.seg button[aria-pressed=true]{background:#f1f8f3;color:#0f4a30}
+select,input[type=text],textarea{font:16px "Source Sans 3",sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+header select{background:#f1f8f3;color:#0f4a30;border:0;min-height:44px;max-width:380px}
+textarea{min-height:120px;resize:vertical;line-height:1.55}
+textarea.big{min-height:380px}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+/* the strip */
+.strip{display:grid;grid-template-columns:4fr 7fr 9fr;gap:6px;margin-top:20px}
+.part{background:#f1f8f3;color:#15211b;border:0;border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;min-height:92px;display:flex;flex-direction:column;gap:2px;position:relative}
+.part:nth-child(3){background:#ffd9e2}
+.part b{font:800 22px Archivo,sans-serif}
+.part span{font-size:14px;color:#3d5246}
+.part[aria-current=true]{box-shadow:0 0 0 3px #f6c94c}
+.stripnote{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:15px;color:#bcd7c6;margin-top:10px}
+/* tabs */
+nav.tabs{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:5}
+nav.tabs .wrap{display:flex;gap:4px;overflow-x:auto}
+nav.tabs a{flex:none;padding:12px 14px;color:var(--mute);text-decoration:none;font-weight:600;border-bottom:3px solid transparent;min-height:44px}
+nav.tabs a[aria-current=page]{color:var(--green);border-color:var(--green)}
+main{padding:26px 0 60px}
+.view{display:none}.view.on{display:block}
+/* stepper */
+.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-bottom:22px;counter-reset:s}
+.steps button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:10px;min-height:56px;text-align:left;font:600 15px "Source Sans 3",sans-serif;cursor:pointer;line-height:1.2}
+.steps button small{display:block;font-weight:400;color:var(--mute);font-size:13px}
+.steps button[aria-current=step]{background:var(--green);border-color:var(--green);color:#fff}
+.steps button[aria-current=step] small{color:#d4eadb}
+.steps button.done{border-color:var(--green)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.qbox{border-left:6px solid var(--red);background:var(--redbg);padding:14px 16px;border-radius:0 10px 10px 0;margin-bottom:16px;font-size:19px}
+.qbox .mk{font-weight:700;color:var(--red);white-space:nowrap}
+.ct{background:none;border:0;padding:0 2px;font:inherit;font-weight:700;color:var(--red);text-decoration:underline dotted 2px;text-underline-offset:3px;cursor:pointer}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-weight:600;margin-bottom:4px}
+.fld .help{font-size:14px;color:var(--mute);margin:-2px 0 6px}
+.ex-row{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;font:15px "Source Sans 3",sans-serif;cursor:pointer;min-height:36px}
+.chip:hover{border-color:var(--green)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:0 18px;min-height:44px;font:700 16px "Source Sans 3",sans-serif;cursor:pointer;background:var(--green);color:#fff}
+.btn.ghost{background:transparent;color:var(--green);border:2px solid var(--green)}
+.btn.red{background:var(--red)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:18px}
+.hlnote{background:var(--bluebg);border-left:5px solid var(--blue);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+.warn{background:var(--amberbg);border-left:5px solid var(--amber);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0}
+.timer{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.timer output{font:800 22px Archivo,sans-serif;min-width:4.2ch}
+.timer.over output{color:var(--red)}
+.wc{font-size:14px;color:var(--mute)}
+.partw{margin-bottom:26px}
+.partw h3 .mk{color:var(--red)}
+/* assess */
+.crit{border-top:1px solid var(--line);padding:14px 0}
+.crit h3{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.lv button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px;text-align:left;font:15px/1.35 "Source Sans 3",sans-serif;cursor:pointer;min-height:44px}
+.lv button b{display:block;font-family:Archivo,sans-serif;margin-bottom:2px}
+.lv button[aria-pressed=true]{border:2px solid var(--red);background:var(--redbg)}
+.score{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+.dial{font:800 clamp(56px,9vw,84px)/1 Archivo,sans-serif;color:var(--red);white-space:nowrap}
+.dial small{font-size:.38em;color:var(--mute)}
+.meter{height:14px;background:var(--line);border-radius:7px;overflow:hidden;margin:8px 0}
+.meter i{display:block;height:100%;background:var(--red);border-radius:7px;transition:width .3s}
+.sig{display:grid;grid-template-columns:repeat(auto-fit,minmax(11em,1fr));gap:8px;margin-top:10px}
+.sig div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+.sig b{font:800 24px Archivo,sans-serif;display:block}
+.sig .ok b{color:var(--green)}.sig .lo b{color:var(--amber)}
+.pts{list-style:none;padding:0;margin:0}
+.pts li{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--line)}
+.pts input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--green)}
+/* models */
+.model{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:16px;font-size:16px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(15em,1fr));gap:8px;margin-top:10px}
+.notes div{border-left:4px solid var(--red);padding:6px 10px;background:var(--redbg);border-radius:0 8px 8px 0;font-size:15px}
+.notes b{display:block}
+/* terms */
+.termgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(19em,1fr));gap:12px}
+.term h3{text-transform:capitalize;color:var(--red)}
+.term ul,.card ul{margin:6px 0 8px;padding-left:20px}
+.term .shape{font-size:15px;background:var(--leaf);padding:6px 10px;border-radius:8px}
+.term .trap{font-size:15px;color:var(--amber)}
+.term.focus{outline:3px solid var(--red)}
+/* bands table */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--line);padding:10px;vertical-align:top;text-align:left}
+th{background:var(--panel)}
+td.m{font:800 20px Archivo,sans-serif;white-space:nowrap;color:var(--red)}
+mark{background:var(--bluebg);color:var(--blue);padding:0 2px;border-radius:3px}
+.bank{display:grid;gap:14px}
+.bank details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:8px;background:var(--bg)}
+.bank summary{cursor:pointer;font-weight:600;min-height:32px}
+.good{border-left:5px solid var(--green);background:var(--leaf);padding:8px 12px;border-radius:0 8px 8px 0;margin:6px 0}
+.weak{border-left:5px solid var(--red);background:var(--redbg);padding:8px 12px;border-radius:0 8px 8px 0;margin:6px 0}
+.small{font-size:14px;color:var(--mute)}
+dialog{border:0;border-radius:14px;padding:0;max-width:560px;width:calc(100% - 32px);background:var(--bg);color:var(--ink);box-shadow:0 20px 60px rgb(0 0 0/.35)}
+dialog::backdrop{background:rgb(0 0 0/.45)}
+dialog .in{padding:22px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+@media(max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}.steps button small{display:none}}
+@media(max-width:600px){.strip{grid-template-columns:minmax(0,1fr)}.part{min-height:0}.steps{grid-template-columns:repeat(5,minmax(0,1fr))}.steps button{font-size:13px;padding:8px 4px;text-align:center}.lv{grid-template-columns:minmax(0,1fr)}.ex-row{grid-template-columns:minmax(0,1fr)}.grid3{grid-template-columns:minmax(0,1fr)}.score{grid-template-columns:minmax(0,1fr)}table{font-size:14px}textarea.big{min-height:300px}}
+#printarea{display:none}
+@media print{body>*:not(#printarea){display:none!important}#printarea{display:block;white-space:pre-wrap;font:12pt/1.5 Georgia,serif;color:#000;background:#fff}body{background:#fff}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>ESS essay coach</h1>
+        <p>Paper 2, Section B structured essays · new guide (first exams 2026)</p>
+      </div>
+      <div class="ctrls">
+        <div><label id="lvlab">Level</label><div class="seg" role="group" aria-labelledby="lvlab"><button id="lvSL" data-l="sl">SL</button><button id="lvHL" data-l="hl">HL</button></div></div>
+        <div><label for="qsel">Question</label><select id="qsel"></select></div>
+      </div>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="stripnote"><span>Each question: 20 marks</span><span id="choice"></span><span>Parts a and b: marking points · Part c: markbands</span></div>
+  </div>
+</header>
+<nav class="tabs" aria-label="Sections"><div class="wrap">
+  <a href="#practise" data-v="practise">Practise</a>
+  <a href="#terms" data-v="terms">Command terms</a>
+  <a href="#markbands" data-v="markbands">Markbands</a>
+  <a href="#bank" data-v="bank">Questions &amp; answers</a>
+  <a href="#tips" data-v="tips">High-scoring essays</a>
+</div></nav>
+
+<main><div class="wrap">
+
+<section class="view" id="v-practise">
+  <div class="steps" id="steps">
+    <button data-s="0">1 Decode<small>What is it asking?</small></button>
+    <button data-s="1">2 Plan<small>5 minutes</small></button>
+    <button data-s="2">3 Write<small>a, b and c</small></button>
+    <button data-s="3">4 Self-assess<small>Against markbands</small></button>
+    <button data-s="4">5 Compare<small>Models &amp; export</small></button>
+  </div>
+
+  <div class="step" data-s="0">
+    <h2>Decode the question</h2>
+    <div class="qbox" id="d-q"></div>
+    <div class="grid2">
+      <div>
+        <div class="card" id="d-term"></div>
+        <div class="hlnote" id="d-hint"></div>
+      </div>
+      <div>
+        <div class="fld"><label for="f-ask">In your own words, what must you do?</label><p class="help">Name the command term, the topic and any limits (e.g. “named examples”, “global scale”).</p><textarea id="f-ask" data-f="ask"></textarea></div>
+        <div class="fld"><label for="f-def">Key terms you will define in your introduction</label><input type="text" id="f-def" data-f="def"></div>
+        <div class="fld"><label for="f-scope">Scope words in the question</label><input type="text" id="f-scope" data-f="scope"></div>
+      </div>
+    </div>
+    <div class="bar"><span></span><button class="btn" data-go="1">Next: plan →</button></div>
+  </div>
+
+  <div class="step" data-s="1">
+    <h2>Plan in five minutes</h2>
+    <div class="qbox" id="p-q"></div>
+    <div class="grid2">
+      <div>
+        <div class="fld"><label for="f-conc">1. Your conclusion first</label><p class="help">Decide your judgement before you write. It gives the essay direction. Use “to a large / limited extent because…”.</p><textarea id="f-conc" data-f="conc"></textarea></div>
+        <div class="fld"><label>2. Named examples (aim for about three, local and global)</label><p class="help">Place and case · data or date · the point it supports</p>
+          <div id="exrows"></div></div>
+        <div class="fld" id="lensbox"><label for="f-lens">4. HL lens</label><p class="help">Bring in at least one lens and weave it through your argument, not just one paragraph.</p>
+          <select id="f-lens" data-f="lens"><option value="">Choose a lens</option><option>Environmental economics</option><option>Environmental law</option><option>Environmental ethics</option></select>
+          <div class="chips" id="lenschips"></div>
+          <input type="text" id="f-lensn" data-f="lensn" placeholder="How will you use it?">
+        </div>
+      </div>
+      <div>
+        <div class="fld"><label for="f-for">3a. Arguments, factors or strengths</label><textarea id="f-for" data-f="for"></textarea></div>
+        <div class="fld"><label for="f-ag">3b. Counter-arguments or limitations</label><p class="help">Discuss, evaluate and to what extent all need balance.</p><textarea id="f-ag" data-f="ag"></textarea></div>
+        <div class="fld"><label for="f-evs">Perspectives (EVSs, stakeholders)</label><input type="text" id="f-evs" data-f="evs" placeholder="e.g. ecocentric conservationists vs technocentric farmers"></div>
+      </div>
+    </div>
+    <div class="bar"><button class="btn ghost" data-go="0">← Back</button><span><button class="btn ghost" id="mkout">Put my plan into part c as an outline</button> <button class="btn" data-go="2">Next: write →</button></span></div>
+  </div>
+
+  <div class="step" data-s="2">
+    <h2>Write your answers</h2>
+    <p class="small">Suggested timing from class: part a 5 min, part b 15 min, part c 20 min. Your work saves in this browser as you type.</p>
+    <div id="writeparts"></div>
+    <div class="bar"><button class="btn ghost" data-go="1">← Back</button><button class="btn" data-go="3">Next: self-assess →</button></div>
+  </div>
+
+  <div class="step" data-s="3">
+    <h2>Self-assess</h2>
+    <div class="grid2">
+      <div>
+        <div class="card"><h3>Part c against the markbands</h3><p class="small">Pick the description that best fits your part c for each row. Examiners use a best-fit approach: you do not need every descriptor in a band, and stronger rows can compensate for weaker ones.</p>
+          <div id="crit"></div></div>
+      </div>
+      <div>
+        <div class="card" style="position:sticky;top:64px">
+          <div class="score"><div class="dial" id="dial">–<small>/9</small></div><div><h3 id="bandname">Choose a level for each row</h3><div class="meter"><i id="meter" style="width:0"></i></div><p class="small" id="bestfit"></p></div></div>
+          <h3 style="margin-top:14px">What your part c shows</h3>
+          <p class="small">Automatic checks of your text. They are signals, not marks.</p>
+          <div class="sig" id="sig"></div>
+          <div id="next"></div>
+        </div>
+      </div>
+    </div>
+    <h2 style="margin-top:28px">Parts a and b: tick the marking points you made</h2>
+    <div class="grid2" id="abmark"></div>
+    <div class="bar"><button class="btn ghost" data-go="2">← Back</button><button class="btn" data-go="4">Next: compare →</button></div>
+  </div>
+
+  <div class="step" data-s="4">
+    <h2>Compare with model answers</h2>
+    <div id="cmp"></div>
+    <div class="card" style="margin-top:20px">
+      <h3>Export your essay</h3>
+      <p class="small">Includes the questions, your plan, your answers and your self-assessed mark.</p>
+      <div class="chips"><button class="btn" id="print" hidden>Print or save as PDF</button><button class="btn ghost" id="dlhtml" hidden>Download printable file</button><button class="btn ghost" id="dltxt" hidden>Download text file</button><button class="btn ghost" id="copy">Copy to clipboard</button><button class="btn ghost red" id="reset" style="color:var(--red);border-color:var(--red)">Clear this question</button></div>
+      <p class="small" id="dlnote">Open the downloaded file and print it, or paste the copied text into a document.</p>
+    </div>
+    <div class="bar"><button class="btn ghost" data-go="3">← Back</button><span></span></div>
+  </div>
+</section>
+
+<section class="view" id="v-terms">
+  <h2>Command terms</h2>
+  <p>The command term tells you what the examiner wants. Definitions are from the IB ESS guide glossary; “in your answer” says what that means for a Paper 2 essay.</p>
+  <div class="fld" style="max-width:420px"><label for="tsearch">Find a command term</label><input type="text" id="tsearch" placeholder="e.g. evaluate"></div>
+  <div id="termlist"></div>
+</section>
+
+<section class="view" id="v-markbands">
+  <h2>Part c markbands</h2>
+  <p>Part c (9 marks) is marked against these markbands; parts a and b are marked against marking points. The bands are the same at SL and HL except that <mark>HL answers must include HL lenses content</mark>.</p>
+  <div class="scroll"><table id="bandtable"></table></div>
+  <div class="grid2" style="margin-top:20px">
+    <div class="card"><h3>How examiners apply them</h3><ul>
+      <li>Best fit: a response can match different rows at different levels; the mark reflects the overall balance.</li>
+      <li>You do not need every descriptor in a band to be awarded a mark in it.</li>
+      <li>Within a band, the lower mark means the response only just fits; the upper mark means it fits well.</li></ul></div>
+    <div class="card"><h3>Paper 2, Section B at a glance</h3><div class="scroll"><table class="stack">
+      <thead><tr><th></th><th>SL</th><th>HL</th></tr></thead>
+      <tbody><tr><td>Paper 2</td><td>2 h · 60 marks</td><td>2 h 30 · 80 marks</td></tr>
+      <tr><td>Section B</td><td>1 essay from a choice of 2</td><td>2 essays from a choice of 3</td></tr>
+      <tr><td>Each essay</td><td>a [4] · b [7] · c [9]</td><td>a [4] · b [7] · c [9]</td></tr></tbody></table></div></div>
+  </div>
+</section>
+
+<section class="view" id="v-bank">
+  <h2>Practice questions and answers</h2>
+  <p>Seven structured essays covering the course. Each has SL and HL versions of part c, marking points for parts a and b, indicative content for part c and model answers.</p>
+  <div class="bank" id="banklist"></div>
+</section>
+
+<section class="view" id="v-tips">
+  <h2>How to write a high-scoring essay</h2>
+  <p>Each heading is a 7–9 markband descriptor. The HL and SL requirements are almost identical; the only difference is that HL answers must include content from the HL lenses.</p>
+  <div class="grid2" id="tiplist"></div>
+  <h2 style="margin-top:28px">A structure for part c</h2>
+  <div class="grid3">
+    <div class="card"><h3>1. Introduce</h3><p>Define the key terms in the question and outline the issue. Use lots of terminology.</p></div>
+    <div class="card"><h3>2. Break it down</h3><p>Unpack the big idea, e.g. sustainability into environmental, social and economic domains. Build the argument that links the concepts.</p></div>
+    <div class="card"><h3>3. HL lens</h3><p>Introduce the ethical, economic or legal lens you will use, then weave it through your examples.</p></div>
+    <div class="card"><h3>4. Examples</h3><p>About three named examples showing breadth by topic, by region, or preferably both. If time is short, do one example well.</p></div>
+    <div class="card"><h3>5. Counter-arguments</h3><p>Argue several viewpoints. Use EVSs to look at different perspectives.</p></div>
+    <div class="card"><h3>6. Conclude</h3><p>Refer back to your examples and give an explicit judgement. At HL, include the ethical or economic arguments that support it.</p></div>
+  </div>
+</section>
+
+</div></main>
+
+<dialog id="dlg"><div class="in"><div id="dlgbody"></div><div class="bar"><a href="#terms" id="dlgall">All command terms</a><button class="btn" id="dlgx">Close</button></div></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+<pre id="printarea"></pre>
+
+<script src="data.js"></script>
+<script>
+{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const Q=ESS.questions, T=ESS.terms;
+const KEY="ess-essay-coach-v1";
+let S={level:"sl",qid:Q[0].id,step:0,d:{}};
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const q=()=>Q.find(x=>x.id===S.qid)||Q[0];
+const dk=()=>S.qid+"-"+S.level;
+const D=()=>S.d[dk()]||(S.d[dk()]={ex:[{},{},{}],as:{},tk:{a:[],b:[]}});
+const cq=()=>S.level==="hl"?q().c.hl:q().c.sl;
+const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("on"),2200)};
+
+/* command term detection at the start of the question or a sentence */
+const sortedTerms=[...T].sort((a,b)=>b.t.length-a.t.length);
+function findTerm(text){const l=text.toLowerCase();return sortedTerms.find(t=>l.startsWith(t.t+" ")||l.startsWith(t.t+","))}
+function markTerms(text){
+  return text.split(/(?<=[.?]\s)/).map(s=>{const t=findTerm(s);if(!t)return esc(s);const n=t.t.length;return '<button class="ct" data-t="'+esc(t.t)+'" title="What does this command term need?">'+esc(s.slice(0,n))+'</button>'+esc(s.slice(n))}).join("");
+}
+function termCard(t,full){
+  return '<h3 style="text-transform:capitalize;color:var(--red)">'+esc(t.t)+'</h3><p><b>Definition:</b> '+esc(t.def)+'</p><p style="margin-bottom:2px"><b>In your answer</b></p><ul>'+t.need.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul><p class="shape" style="background:var(--leaf);padding:6px 10px;border-radius:8px;font-size:15px"><b>Shape:</b> '+esc(t.shape)+'</p><p style="font-size:15px;color:var(--amber)"><b>Common trap:</b> '+esc(t.trap)+'</p>'+(full?'':'');
+}
+function openTerm(name){const t=T.find(x=>x.t===name);if(!t)return;$("#dlgbody").innerHTML=termCard(t);$("#dlgall").href="#terms";$("#dlgall").dataset.t=t.t;const d=$("#dlg");if(d.showModal)d.showModal();else d.setAttribute("open","")}
+$("#dlgx").addEventListener("click",()=>$("#dlg").close());
+$("#dlgall").addEventListener("click",e=>{const t=e.currentTarget.dataset.t;$("#dlg").close();setTimeout(()=>{const el=document.getElementById("ct-"+t.replace(/\s/g,"-"));if(el){el.classList.add("focus");el.scrollIntoView({block:"center"});setTimeout(()=>el.classList.remove("focus"),2000)}},60)});
+document.addEventListener("click",e=>{const b=e.target.closest(".ct");if(b)openTerm(b.dataset.t)});
+
+/* header */
+$("#qsel").innerHTML=Q.map((x,i)=>'<option value="'+x.id+'">'+(i+1)+'. '+esc(x.title)+'</option>').join("");
+function header(){
+  $("#qsel").value=S.qid;
+  $("#lvSL").setAttribute("aria-pressed",S.level==="sl");$("#lvHL").setAttribute("aria-pressed",S.level==="hl");
+  const x=q();
+  const parts=[["a",x.a.q,4,"~5 min · marking points"],["b",x.b.q,7,"~15 min · marking points"],["c",cq(),9,"~20 min · markbands"]];
+  $("#strip").innerHTML=parts.map(p=>{const t=findTerm(p[1]);return '<button class="part" data-p="'+p[0]+'"><b>'+p[0]+' · '+p[2]+' marks</b><span>'+esc(t?t.t[0].toUpperCase()+t.t.slice(1):"")+' · '+p[3]+'</span></button>'}).join("");
+  $("#choice").textContent=S.level==="sl"?"SL: answer 1 essay from a choice of 2":"HL: answer 2 essays from a choice of 3";
+}
+$("#strip").addEventListener("click",e=>{const b=e.target.closest(".part");if(!b)return;location.hash="practise";S.step=2;save();render();setTimeout(()=>{const el=document.getElementById("w-"+b.dataset.p);if(el)el.scrollIntoView({block:"start"})},50)});
+$("#qsel").addEventListener("change",e=>{S.qid=e.target.value;S.step=0;save();render()});
+$$(".seg button").forEach(b=>b.addEventListener("click",()=>{S.level=b.dataset.l;save();render()}));
+
+/* steps */
+$("#steps").addEventListener("click",e=>{const b=e.target.closest("button");if(b){S.step=+b.dataset.s;save();render();window.scrollTo({top:$("#steps").offsetTop-60})}});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g){S.step=+g.dataset.go;save();render();window.scrollTo({top:$("#steps").offsetTop-60})}});
+
+/* fields bound to draft */
+function bindFields(){
+  const d=D();
+  $$("[data-f]").forEach(el=>{el.value=d[el.dataset.f]||""});
+  $("#exrows").innerHTML=[0,1,2].map(i=>{const r=d.ex[i]||{};return '<div class="ex-row"><input type="text" data-ex="'+i+'" data-k="p" aria-label="Example '+(i+1)+' place and case" placeholder="Place / case" value="'+esc(r.p)+'"><input type="text" data-ex="'+i+'" data-k="d" aria-label="Example '+(i+1)+' data or date" placeholder="Data / date" value="'+esc(r.d)+'"><input type="text" data-ex="'+i+'" data-k="s" aria-label="Example '+(i+1)+' point it supports" placeholder="Supports which point?" value="'+esc(r.s)+'"></div>'}).join("");
+}
+document.addEventListener("input",e=>{
+  const el=e.target,d=D();
+  if(el.dataset.f){d[el.dataset.f]=el.value;save()}
+  else if(el.dataset.ex){(d.ex[+el.dataset.ex]||(d.ex[+el.dataset.ex]={}))[el.dataset.k]=el.value;save()}
+  else if(el.dataset.ans){d[el.dataset.ans]=el.value;save();wc(el.dataset.ans);if(el.dataset.ans==="c")assess()}
+  else if(el.id==="tsearch")renderTerms(el.value)
+});
+document.addEventListener("change",e=>{if(e.target.id==="f-lens"){D().lens=e.target.value;save();lensChips()}});
+
+const lensSets={"Environmental economics":["negative externality","market failure","polluter-pays principle","tax","tradeable permits","quotas","subsidies","tragedy of the commons","doughnut economics","circular economy","decoupling","non-use value","greenwashing"],"Environmental law":["international agreement","national legislation","enforcement","sovereignty","transboundary","legal personhood","rights of nature","environmental constitutionalism","courts and tribunals","environmental justice"],"Environmental ethics":["anthropocentric","ecocentric","technocentric","intrinsic value","consequentialist","rights-based (deontological)","intergenerational equity","indigenous knowledge","precautionary principle","moral standing"]};
+function lensChips(){const l=D().lens;$("#lenschips").innerHTML=l?lensSets[l].map(c=>'<button class="chip" data-lc="'+esc(c)+'">'+esc(c)+'</button>').join(""):""}
+$("#lenschips").addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(!b)return;const f=$("#f-lensn");f.value=(f.value?f.value.replace(/[;,\s]*$/,"")+"; ":"")+b.dataset.lc;D().lensn=f.value;save()});
+
+$("#mkout").addEventListener("click",()=>{
+  const d=D();
+  if((d.c||"").trim()&&!d._ok){d._ok=1;toast("Part c already has text. Press again to add the outline below it.");return}
+  d._ok=0;
+  const ex=d.ex.filter(r=>r&&r.p).map(r=>"- "+r.p+(r.d?" ("+r.d+")":"")+(r.s?": "+r.s:"")).join("\n");
+  const o=["INTRODUCTION: define "+(d.def||"[key terms]")+" and outline the issue.","","ARGUMENT / STRENGTHS:\n"+(d.for||"[point → because → so]"),"","EXAMPLES:\n"+(ex||"- [named example with data]"),"","COUNTER-ARGUMENT / LIMITATIONS:\n"+(d.ag||"[However, …]")];
+  if(S.level==="hl")o.push("","HL LENS ("+(d.lens||"choose")+"): "+(d.lensn||"[weave it into the argument]"));
+  if(d.evs)o.push("","PERSPECTIVES: "+d.evs);
+  o.push("","CONCLUSION: "+(d.conc||"[to a large / limited extent because…]"));
+  d.c=((d.c||"").trim()?d.c.trim()+"\n\n":"")+o.join("\n");save();S.step=2;save();render();toast("Outline added to part c. Replace each heading with full sentences.");
+});
+
+/* write */
+const timers={};
+function writeParts(){
+  const x=q(),d=D();
+  const P=[["a",x.a.q,4,5],["b",x.b.q,7,15],["c",cq(),9,20]];
+  $("#writeparts").innerHTML=P.map(p=>'<div class="partw" id="w-'+p[0]+'"><div class="bar" style="margin:0 0 6px"><h3>Part '+p[0]+' <span class="mk">['+p[2]+']</span></h3><div class="timer" id="t-'+p[0]+'"><output>'+p[3]+':00</output><button class="chip" data-tm="'+p[0]+'" data-min="'+p[3]+'">Start</button><button class="chip" data-tr="'+p[0]+'" data-min="'+p[3]+'">Reset</button></div></div><div class="qbox" style="font-size:17px">'+markTerms(p[1])+'</div>'+(p[0]==="c"?'<div class="chips" id="starters"></div>':'')+'<textarea id="ans-'+p[0]+'" data-ans="'+p[0]+'" class="'+(p[0]==="c"?"big":"")+'" aria-label="Your answer to part '+p[0]+'">'+esc(d[p[0]]||"")+'</textarea><div class="wc" id="wc-'+p[0]+'"></div></div>').join("");
+  const st=ESS.starters,grp=[["Introduce",st.intro],["Link",st.link],["Balance",st.balance],["Example",st.example]].concat(S.level==="hl"?[["HL lens",st.hl]]:[]).concat([["Conclude",st.conc]]);
+  $("#starters").innerHTML='<span class="small" style="align-self:center">Sentence starters:</span>'+grp.map(g=>'<select class="chip" aria-label="'+g[0]+' starters" data-st><option value="">'+g[0]+'…</option>'+g[1].map(s=>'<option>'+esc(s)+'</option>').join("")+'</select>').join("");
+  ["a","b","c"].forEach(wc);
+  Object.keys(timers).forEach(k=>showTimer(k));
+}
+document.addEventListener("change",e=>{if(e.target.matches("[data-st]")&&e.target.value){const ta=$("#ans-c"),v=e.target.value,p=ta.selectionStart??ta.value.length;ta.value=ta.value.slice(0,p)+(p&&!/\s$/.test(ta.value.slice(0,p))?" ":"")+v+ta.value.slice(p);D().c=ta.value;save();wc("c");e.target.value="";ta.focus()}});
+function wc(p){const el=$("#wc-"+p);if(!el)return;const n=((D()[p]||"").trim().match(/\S+/g)||[]).length;const tip={a:"Aim: 4 short, precise points.",b:"Aim: about 7 developed points.",c:"Strong answers are typically 450–700 words in 20 minutes."}[p];el.textContent=n+" words · "+tip}
+function showTimer(p){const t=timers[p],box=$("#t-"+p);if(!box||!t)return;const s=Math.abs(t.left),m=Math.floor(s/60),ss=String(s%60).padStart(2,"0");box.querySelector("output").textContent=(t.left<0?"+":"")+m+":"+ss;box.classList.toggle("over",t.left<0);box.querySelector("[data-tm]").textContent=t.h?"Pause":"Start"}
+document.addEventListener("click",e=>{
+  const s=e.target.closest("[data-tm]"),r=e.target.closest("[data-tr]");
+  if(s){const p=s.dataset.tm,t=timers[p]||(timers[p]={left:+s.dataset.min*60});if(t.h){clearInterval(t.h);t.h=0}else{t.h=setInterval(()=>{t.left--;showTimer(p);if(t.left===0)toast("Time is up for part "+p+". Move on!")},1000)}showTimer(p)}
+  if(r){const p=r.dataset.tr;if(timers[p])clearInterval(timers[p].h);timers[p]={left:+r.dataset.min*60};showTimer(p)}
+});
+
+/* assess */
+const lvlText=(row,i)=>(row.all||(S.level==="hl"?row.hl:row.sl))[i];
+function crit(){
+  const as=D().as;
+  $("#crit").innerHTML=ESS.bands.rows.map(r=>'<div class="crit"><h3><span>'+esc(r.name)+'</span><a href="#tips" class="small" data-tip="'+r.k+'">How to improve</a></h3><div class="lv">'+[0,1,2].map(i=>'<button data-c="'+r.k+'" data-i="'+i+'" aria-pressed="'+(as[r.k]===i)+'"><b>'+ESS.bands.labels[i]+'</b>'+esc(lvlText(r,i))+'</button>').join("")+'</div></div>').join("");
+}
+$("#crit").addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(!b)return;const as=D().as,i=+b.dataset.i;as[b.dataset.c]=as[b.dataset.c]===i?undefined:i;save();crit();assess()});
+function assess(){
+  const as=D().as,rows=ESS.bands.rows,picked=rows.filter(r=>as[r.k]!==undefined);
+  const txt=(D().c||"").trim(),low=txt.toLowerCase(),words=(txt.match(/\S+/g)||[]).length;
+  if(picked.length){
+    const mean=picked.reduce((s,r)=>s+as[r.k],0)/picked.length;
+    const band=Math.round(mean),spread=picked.filter(r=>as[r.k]===band).length/picked.length;
+    let mark=Math.round(band*3+2+(mean-band)*3);
+    mark=Math.max(band*3+1,Math.min(band*3+3,mark));
+    if(!words)mark=0;
+    $("#dial").innerHTML=mark+"<small>/9</small>";$("#meter").style.width=(mark/9*100)+"%";
+    $("#bandname").textContent=words?"Best fit: "+ESS.bands.labels[band]+" band":"No part c text yet";
+    $("#bestfit").textContent=(picked.length<6?"Rate all six rows for a full best fit. ":"")+(spread===1?"Your rows sit consistently in one band.":"Your rows sit in different bands; the mark balances them, moving up or down within the band.");
+  }else{$("#dial").innerHTML="–<small>/9</small>";$("#meter").style.width="0";$("#bandname").textContent="Choose a level for each row";$("#bestfit").textContent=""}
+  const count=list=>list.reduce((n,w)=>n+(low.split(w).length-1),0);
+  const paras=txt?txt.split(/\n\s*\n/).filter(p=>p.trim()).length:0;
+  const nums=(txt.match(/\d[\d,.]*\s?(%|ppm|km|million|sq|°C|GW|tonnes)?/g)||[]).length;
+  const named=new Set((txt.match(/(?<![.!?]\s|^)\b[A-Z][a-z]{2,}(?:\s[A-Z][a-z]+)*/gm)||[]).filter(w=>!["The","This","However","In","For","On","It","These","Although","Overall","Therefore","As","A","An","HL","SL","When","Where","While","If"].includes(w))).size;
+  const term=findTerm(cq()),needBal=term&&term.grp==="eval";
+  const lens=ESS.lensWords.filter(w=>low.includes(w)).length;
+  const S2=[["Words",words,words>=400],["Paragraphs",paras,paras>=4],["Linking phrases",count(ESS.linkWords),count(ESS.linkWords)>=4],["Balance words",count(ESS.balanceWords),!needBal||count(ESS.balanceWords)>=2],["Figures and dates",nums,nums>=2],["Conclusion signal",count(ESS.concWords)?"Yes":"No",count(ESS.concWords)>0],["Possible named places / cases",named,named>=3]];
+  if(S.level==="hl")S2.push(["HL lens terms",lens,lens>=3]);
+  $("#sig").innerHTML=S2.map(s=>'<div class="'+(s[2]?"ok":"lo")+'"><b>'+esc(s[1])+'</b>'+esc(s[0])+'</div>').join("");
+  const tips=[];
+  if(!words)tips.push("Write your part c first (step 3), then come back.");
+  else{
+    if(needBal&&count(ESS.balanceWords)<2)tips.push("“"+term.t+"” needs balance. Add a counter-argument paragraph starting “However, …”.");
+    if(!count(ESS.concWords))tips.push("No clear conclusion found. Finish with an explicit judgement, e.g. “to a large extent because…”.");
+    if(nums<2)tips.push("Add data to your examples: numbers, dates, units.");
+    if(S.level==="hl"&&lens<3)tips.push("HL: bring in HL lens content (law, economics or ethics). It is part of the first markband descriptor.");
+    const lowRows=rows.filter(r=>as[r.k]!==undefined&&as[r.k]<2);
+    lowRows.slice(0,2).forEach(r=>tips.push(esc(r.name)+": "+esc(ESS.tips[r.k].do[0])));
+  }
+  $("#next").innerHTML=tips.length?'<h3 style="margin-top:14px">Next steps</h3><ul>'+tips.map(t=>'<li>'+t+'</li>').join("")+'</ul>':"";
+}
+function abMark(){
+  const x=q(),tk=D().tk;
+  $("#abmark").innerHTML=["a","b"].map(p=>{const P=x[p],n=Math.min(P.m,(tk[p]||[]).length);return '<div class="card"><div class="bar" style="margin:0"><h3>Part '+p+' <span style="color:var(--red)">['+P.m+']</span></h3><b style="font:800 26px Archivo,sans-serif;color:var(--red)">'+n+'/'+P.m+'</b></div><p class="small">'+esc(P.rule)+'</p><ul class="pts">'+P.pts.map((t,i)=>'<li><input type="checkbox" id="tk-'+p+i+'" data-tk="'+p+'" data-i="'+i+'" '+((tk[p]||[]).includes(i)?"checked":"")+'><label for="tk-'+p+i+'">'+esc(t)+'</label></li>').join("")+'</ul></div>'}).join("");
+}
+$("#abmark").addEventListener("change",e=>{const c=e.target.closest("[data-tk]");if(!c)return;const tk=D().tk,p=c.dataset.tk,i=+c.dataset.i;tk[p]=(tk[p]||[]).filter(v=>v!==i);if(c.checked)tk[p].push(i);save();abMark()});
+
+/* compare */
+function compare(){
+  const x=q(),ms=x.c.models;
+  let sel=compare.sel??ms.findIndex(m=>m.band===2);if(sel<0||sel>=ms.length)sel=ms.length-1;
+  const m=ms[sel];
+  const mq=m.lvl==="hl"?x.c.hl:x.c.sl;
+  $("#cmp").innerHTML='<div class="grid2"><div><div class="card"><h3>Your part c</h3><div class="model" style="max-height:620px;overflow:auto">'+(esc(D().c)||'<span class="small">You have not written part c yet.</span>')+'</div></div></div><div><div class="card"><h3>Model answer</h3>'+(ms.length>1?'<div class="chips">'+ms.map((mm,i)=>'<button class="chip" data-m="'+i+'" style="'+(i===sel?"border:2px solid var(--red)":"")+'">'+ESS.bands.labels[mm.band]+' band · '+mm.mark+'/9</button>').join("")+'</div>':'')+'<p class="small">'+(m.lvl==="hl"?"HL":"SL")+' version: '+esc(mq)+(m.lvl!==S.level?' <b>(You are practising '+S.level.toUpperCase()+'; the structure still applies.)</b>':'')+'</p><div class="model" style="max-height:620px;overflow:auto">'+esc(m.text)+'</div></div></div></div><h3 style="margin-top:18px">Examiner comments on this model ('+m.mark+'/9)</h3><div class="notes">'+ESS.bands.rows.map(r=>'<div><b>'+esc(r.name)+'</b>'+esc(m.notes[r.k])+'</div>').join("")+'</div><div class="card" style="margin-top:18px"><h3>Answers may include (indicative content)</h3><ul>'+x.c.ind.map(i=>'<li>'+esc(i)+'</li>').join("")+'</ul><p class="small">Indicative content is not a checklist: other relevant, well-supported material is credited.</p></div>';
+}
+$("#cmp").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(b){compare.sel=+b.dataset.m;compare()}});
+
+/* export */
+function exportText(){
+  const x=q(),d=D(),as=d.as,tk=d.tk;
+  const mark=$("#dial").textContent.replace("/9","");
+  return ["ESS Paper 2 practice essay: "+x.title+" ("+S.level.toUpperCase()+")","","PLAN","Task: "+(d.ask||""),"Definitions: "+(d.def||""),"Conclusion: "+(d.conc||""),"Examples: "+d.ex.filter(r=>r&&r.p).map(r=>r.p+(r.d?" ("+r.d+")":"")).join("; "),"For: "+(d.for||""),"Against: "+(d.ag||"")].concat(S.level==="hl"?["HL lens: "+(d.lens||"")+" "+(d.lensn||"")]:[]).concat(["","(a) "+x.a.q+" [4]",d.a||"","Self-marked: "+Math.min(4,(tk.a||[]).length)+"/4","","(b) "+x.b.q+" [7]",d.b||"","Self-marked: "+Math.min(7,(tk.b||[]).length)+"/7","","(c) "+cq()+" [9]",d.c||"","","Self-assessment for part c: "+mark+"/9"]).concat(ESS.bands.rows.map(r=>"- "+r.name+": "+(as[r.k]!==undefined?ESS.bands.labels[as[r.k]]:"not rated"))).join("\n");
+}
+function exportHtml(){
+  const t=exportText();const x=q();
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>ESS essay: '+esc(x.title)+'</title><style>body{font:12pt/1.5 Georgia,serif;max-width:720px;margin:40px auto;padding:0 20px;color:#111}pre{white-space:pre-wrap;font:inherit}</style></head><body><pre>'+esc(t)+'</pre></body></html>';
+}
+$("#copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(exportText());toast("Copied. Paste it into a document.")}catch(e){toast("Copy was blocked by the browser. Select your text and copy it instead.")}});
+$("#reset").addEventListener("click",e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent="Press again to clear";setTimeout(()=>{delete b.dataset.sure;b.textContent="Clear this question"},3000);return}delete S.d[dk()];save();b.textContent="Clear this question";delete b.dataset.sure;S.step=0;render();toast("Cleared.")});
+/* Inside Claude the page uses Claude's downloads capability; anywhere else (e.g. GitHub Pages) it uses normal browser downloads and printing. */
+let DL=null;const inClaude=!!(window.claude&&window.claude.use);
+const fname=ext=>"ESS-essay-"+S.qid+"-"+S.level.toUpperCase()+"."+ext;
+function browserSave(name,data,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+async function saveFile(name,data,type){if(DL){await DL.save({filename:name,data})}else{browserSave(name,data,type)}}
+if(!inClaude){$("#dlhtml").hidden=false;$("#dltxt").hidden=false;$("#print").hidden=false;$("#dlnote").textContent="Print or save as PDF straight from here, or download a file to keep."}
+else{(async()=>{try{DL=await window.claude.use("downloads")}catch(e){DL=null}if(DL){$("#dlhtml").hidden=false;$("#dltxt").hidden=false}else{$("#dlnote").textContent="Copy your work and paste it into a document to print or submit it."}})()}
+$("#dlhtml").addEventListener("click",async()=>{try{await saveFile(fname("html"),exportHtml(),"text/html");toast("Saved. Open the file to print it.")}catch(e){toast("Download was cancelled.")}});
+$("#dltxt").addEventListener("click",async()=>{try{await saveFile(fname("txt"),exportText(),"text/plain");toast("Saved.")}catch(e){toast("Download was cancelled.")}});
+$("#print").addEventListener("click",()=>{$("#printarea").textContent=exportText();try{window.print()}catch(e){toast("Printing is blocked here. Download the file instead.")}});
+
+/* reference views */
+function renderTerms(f){
+  f=(f||"").toLowerCase().trim();
+  $("#termlist").innerHTML=Object.keys(ESS.groups).map(g=>{const L=T.filter(t=>t.grp===g&&(!f||t.t.includes(f)));if(!L.length)return"";return '<h3 style="margin:22px 0 10px">'+esc(ESS.groups[g])+'</h3><div class="termgrid">'+L.map(t=>'<div class="card term" id="ct-'+t.t.replace(/\s/g,"-")+'">'+termCard(t,1)+'</div>').join("")+'</div>'}).join("")||'<p>No command term matches that search.</p>';
+}
+function renderBands(){
+  const B=ESS.bands,hl=S.level==="hl";
+  $("#bandtable").innerHTML='<thead><tr><th>Marks</th><th>Level descriptor ('+(hl?"HL":"SL")+'): the response contains…</th></tr></thead><tbody><tr><td class="m">0</td><td>'+esc(B.zero)+'</td></tr>'+[0,1,2].map(i=>'<tr><td class="m">'+B.labels[i]+'</td><td><ul style="margin:0;padding-left:20px">'+B.rows.map(r=>{const t=esc(lvlText(r,i));return '<li>'+(hl&&r.hl?t.replace(/HL lenses content/,"<mark>HL lenses content</mark>"):t)+'</li>'}).join("")+'</ul></td></tr>').join("")+'</tbody>';
+}
+function renderBank(){
+  $("#banklist").innerHTML=Q.map((x,i)=>'<div class="card"><div class="bar" style="margin:0 0 8px"><div><h3>'+(i+1)+'. '+esc(x.title)+'</h3><span class="small">'+esc(x.topic)+' · '+esc(x.src)+'</span></div><button class="btn" data-practise="'+x.id+'">Practise this</button></div><p>(a) '+markTerms(x.a.q)+' <b style="color:var(--red)">[4]</b></p><p>(b) '+markTerms(x.b.q)+' <b style="color:var(--red)">[7]</b></p><p>(c) SL: '+markTerms(x.c.sl)+' <b style="color:var(--red)">[9]</b></p><p>(c) HL: '+markTerms(x.c.hl)+' <b style="color:var(--red)">[9]</b></p><details><summary>Marking points for (a) and (b)</summary><p class="small">'+esc(x.a.rule)+'</p><ul>'+x.a.pts.map(p=>'<li>'+esc(p)+'</li>').join("")+'</ul><p class="small">'+esc(x.b.rule)+'</p><ul>'+x.b.pts.map(p=>'<li>'+esc(p)+'</li>').join("")+'</ul></details><details><summary>Part (c): indicative content and model answers</summary><ul>'+x.c.ind.map(p=>'<li>'+esc(p)+'</li>').join("")+'</ul>'+x.c.models.map(m=>'<h3 style="margin-top:12px">'+(m.lvl==="hl"?"HL":"SL")+' model · '+ESS.bands.labels[m.band]+' band · '+m.mark+'/9</h3><div class="model">'+esc(m.text)+'</div>').join("")+'</details></div>').join("");
+}
+$("#banklist").addEventListener("click",e=>{const b=e.target.closest("[data-practise]");if(!b)return;S.qid=b.dataset.practise;S.step=0;save();location.hash="practise";render()});
+function renderTips(){
+  $("#tiplist").innerHTML=ESS.bands.rows.map(r=>{const t=ESS.tips[r.k];return '<div class="card" id="tip-'+r.k+'"><h3>'+esc(t.title)+'</h3><ul>'+t.do.map(d=>'<li>'+esc(d)+'</li>').join("")+'</ul><div class="good"><b>Good:</b> '+esc(t.good)+'</div><div class="weak"><b>Weak:</b> '+esc(t.weak)+'</div></div>'}).join("");
+}
+document.addEventListener("click",e=>{const a=e.target.closest("[data-tip]");if(!a)return;setTimeout(()=>{const el=$("#tip-"+a.dataset.tip);if(el)el.scrollIntoView({block:"start"})},60)});
+
+/* routing */
+const views=["practise","terms","markbands","bank","tips"];
+function route(){
+  const v=views.includes(location.hash.slice(1))?location.hash.slice(1):"practise";
+  $$(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  $$("nav.tabs a").forEach(a=>{if(a.dataset.v===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+}
+window.addEventListener("hashchange",route);
+
+function render(){
+  header();
+  const x=q();
+  $$(".step").forEach(s=>s.hidden=+s.dataset.s!==S.step);
+  $$("#steps button").forEach(b=>{const i=+b.dataset.s;if(i===S.step)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current")});
+  $$("#strip .part").forEach(p=>p.removeAttribute("aria-current"));
+  const qhtml=markTerms(cq())+' <span class="mk">[9]</span>';
+  $("#d-q").innerHTML='<span class="small" style="display:block">Part c · '+esc(x.topic)+'</span>'+qhtml;
+  $("#p-q").innerHTML=qhtml;
+  const t=findTerm(cq());
+  $("#d-term").innerHTML=t?'<p class="small" style="margin:0">Command term</p>'+termCard(t):"";
+  $("#d-hint").innerHTML='<b>Hint:</b> '+esc(x.c.hint)+(S.level==="hl"?'<br><b>HL:</b> your answer must include HL lenses content (law, economics or ethics) to reach the higher bands.':'');
+  $("#lensbox").hidden=S.level!=="hl";
+  bindFields();lensChips();writeParts();crit();assess();abMark();compare.sel=undefined;compare();
+  renderBands();
+}
+renderTerms("");renderBank();renderTips();render();route();
+}
+</script>
+</body>
+</html>
